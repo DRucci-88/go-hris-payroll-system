@@ -94,7 +94,7 @@ func (emp *ContractEmployee) CalculateSalary() (float64, error) {
 }
 
 type Freelancer struct {
-	HourylyLate float64
+	HourlyRate  float64
 	HoursWorked int
 }
 
@@ -103,10 +103,10 @@ func NewFreelancer(
 	hoursWorked int,
 ) (*Freelancer, error) {
 	if hourlyRate < 0.0 || hoursWorked < 0 {
-		return nil, fmt.Errorf("HourylyLate dan HourylyLate [%w]", ErrNotNegativeValue)
+		return nil, fmt.Errorf("HourlyRate dan HourlyRate [%w]", ErrNotNegativeValue)
 	}
 	return &Freelancer{
-		HourylyLate: hourlyRate,
+		HourlyRate:  hourlyRate,
 		HoursWorked: hoursWorked,
 	}, nil
 }
@@ -114,7 +114,7 @@ func (emp *Freelancer) GetEmployeeType() EmployeeTypeEnum {
 	return FREELANCE
 }
 func (emp *Freelancer) CalculateSalary() (float64, error) {
-	return emp.HourylyLate * float64(emp.HoursWorked), nil
+	return emp.HourlyRate * float64(emp.HoursWorked), nil
 	// return 0.0, nil
 }
 
@@ -193,7 +193,7 @@ func (hris *HRIS) PrintPayrollReport() {
 			fmt.Printf("Bonus         : Rp %.2f\n", emp.PerformanceBonus)
 
 		case *Freelancer:
-			fmt.Printf("Hourly Rate   : Rp %.2f\n", emp.HourylyLate)
+			fmt.Printf("Hourly Rate   : Rp %.2f\n", emp.HourlyRate)
 			fmt.Printf("Hours Worked  : %d jam\n", emp.HoursWorked)
 
 		default:
@@ -207,29 +207,236 @@ func (hris *HRIS) PrintPayrollReport() {
 }
 
 func main() {
-	hris := HRIS{
+	reader := bufio.NewReader(os.Stdin)
+
+	hris := &HRIS{
 		Employees: make(map[string]string),
 		Payrolls:  make(map[string]PayrollCalculator),
 	}
 
-	fulltime, _ := NewFullTimeEmployee(10_000_000, 2_000_000, 0.05)
+MainLoop:
+	for {
+		clearConsole()
 
-	contract, _ := NewContractEmployee(7_000_000, 1_000_000)
+		printMainMenu()
 
-	freelancer, _ := NewFreelancer(150_000, 80)
+		menu := readInt(reader, "Pilih menu: ")
 
-	hris.RegisterEmployee("EMP001", "Le Rucco", fulltime)
+		switch menu {
 
-	hris.RegisterEmployee("EMP002", "Dewa", contract)
+		case 0:
+			fmt.Println("Terima kasih telah menggunakan HRIS System")
+			break MainLoop
 
-	hris.RegisterEmployee("EMP003", "Norber", freelancer)
+		case 1:
+			menuRegisterFullTime(reader, hris)
+			pause(reader)
 
-	hris.PrintPayrollReport()
+		case 2:
+			menuRegisterContract(reader, hris)
+			pause(reader)
 
-	fmt.Printf(
-		"\nTOTAL PAYOUT: Rp %.2f\n",
-		hris.CalculateTotalPayout(),
+		case 3:
+			menuRegisterFreelancer(reader, hris)
+			pause(reader)
+
+		case 4:
+			clearConsole()
+			hris.PrintPayrollReport()
+			pause(reader)
+
+		case 5:
+			clearConsole()
+			fmt.Printf(
+				"\nTOTAL PAYOUT: Rp %.2f\n",
+				hris.CalculateTotalPayout(),
+			)
+			pause(reader)
+
+		case 6:
+			seedDummyEmployees(hris)
+			fmt.Println("Dummy employees berhasil ditambahkan")
+			pause(reader)
+
+		default:
+			fmt.Println("Menu tidak valid")
+			pause(reader)
+		}
+	}
+}
+func printMainMenu() {
+	fmt.Println("====================================")
+	fmt.Println(" HRIS & PAYROLL MANAGEMENT SYSTEM")
+	fmt.Println("====================================")
+	fmt.Println("1. Register FullTime Employee")
+	fmt.Println("2. Register Contract Employee")
+	fmt.Println("3. Register Freelancer")
+	fmt.Println("4. Show Payroll Report")
+	fmt.Println("5. Show Total Payout")
+	fmt.Println("6. Seed Dummy Employees")
+	fmt.Println("0. Exit")
+	fmt.Println("====================================")
+}
+
+func pause(reader *bufio.Reader) {
+	fmt.Println("\nTekan ENTER untuk melanjutkan...")
+	reader.ReadString('\n')
+}
+
+func menuRegisterFullTime(
+	reader *bufio.Reader,
+	hris *HRIS,
+) {
+
+	id := readString(reader, "Employee ID: ")
+	name := readString(reader, "Nama: ")
+	baseSalary := readFloat(reader, "Base Salary: ")
+	allowance := readFloat(reader, "Allowance: ")
+	taxRate := readFloat(reader, "Tax Rate (0.05 = 5%): ")
+
+	employee, err := NewFullTimeEmployee(
+		baseSalary,
+		allowance,
+		taxRate,
 	)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = hris.RegisterEmployee(
+		id,
+		name,
+		employee,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("FullTime Employee berhasil didaftarkan")
+}
+
+func seedDummyEmployees(hris *HRIS) {
+	fulltime, _ := NewFullTimeEmployee(
+		10_000_000,
+		2_000_000,
+		0.05,
+	)
+
+	contract, _ := NewContractEmployee(
+		7_000_000,
+		1_000_000,
+	)
+
+	freelancer, _ := NewFreelancer(
+		150_000,
+		80,
+	)
+
+	hris.RegisterEmployee(
+		"EMP001",
+		"Le Rucco",
+		fulltime,
+	)
+
+	hris.RegisterEmployee(
+		"EMP002",
+		"Dewa",
+		contract,
+	)
+
+	hris.RegisterEmployee(
+		"EMP003",
+		"Norber",
+		freelancer,
+	)
+}
+
+func menuRegisterContract(
+	reader *bufio.Reader,
+	hris *HRIS,
+) {
+
+	id := readString(reader, "Employee ID: ")
+	name := readString(reader, "Nama: ")
+
+	monthlyRate := readFloat(
+		reader,
+		"Monthly Rate: ",
+	)
+
+	performanceBonus := readFloat(
+		reader,
+		"Performance Bonus: ",
+	)
+
+	employee, err := NewContractEmployee(
+		monthlyRate,
+		performanceBonus,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = hris.RegisterEmployee(
+		id,
+		name,
+		employee,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("Contract Employee berhasil didaftarkan")
+}
+
+func menuRegisterFreelancer(
+	reader *bufio.Reader,
+	hris *HRIS,
+) {
+
+	id := readString(reader, "Employee ID: ")
+	name := readString(reader, "Nama: ")
+
+	hourlyRate := readFloat(
+		reader,
+		"Hourly Rate: ",
+	)
+
+	hoursWorked := readInt(
+		reader,
+		"Hours Worked: ",
+	)
+
+	employee, err := NewFreelancer(
+		hourlyRate,
+		hoursWorked,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	err = hris.RegisterEmployee(
+		id,
+		name,
+		employee,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("Freelancer berhasil didaftarkan")
 }
 
 // Helper untuk membaca input bertipe string secara bersih
