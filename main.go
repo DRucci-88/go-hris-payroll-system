@@ -1,8 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
 /*
@@ -224,4 +230,48 @@ func main() {
 		"\nTOTAL PAYOUT: Rp %.2f\n",
 		hris.CalculateTotalPayout(),
 	)
+}
+
+// Helper untuk membaca input bertipe string secara bersih
+func readString(reader *bufio.Reader, prompt string) string {
+	fmt.Print(prompt)
+	input, _ := reader.ReadString('\n')
+	return strings.TrimSpace(input)
+}
+
+// Helper untuk membaca input bertipe integer secara bersih
+func readInt(reader *bufio.Reader, prompt string) int {
+	for {
+		inputStr := readString(reader, prompt)
+		val, err := strconv.Atoi(inputStr)
+		if err == nil {
+			return val
+		}
+		fmt.Println("Input tidak valid, harap masukkan angka bulat.")
+	}
+}
+
+// Helper untuk membaca input bertipe float64 secara bersih
+func readFloat(reader *bufio.Reader, prompt string) float64 {
+	for {
+		inputStr := readString(reader, prompt)
+		val, err := strconv.ParseFloat(inputStr, 64)
+		if err == nil {
+			return val
+		}
+		fmt.Println("Input tidak valid, harap masukkan angka desimal/nominal.")
+	}
+}
+
+func clearConsole() {
+	var cmd *exec.Cmd
+
+	if runtime.GOOS == "windows" {
+		cmd = exec.Command("cmd", "/c", "cls")
+	} else {
+		cmd = exec.Command("clear")
+	}
+
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 }
