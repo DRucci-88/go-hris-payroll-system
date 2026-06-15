@@ -127,7 +127,7 @@ func (hris *HRIS) RegisterEmployee(
 	}
 	_, existEmployee := hris.Employees[id]
 	_, existPayroll := hris.Payrolls[id]
-	if existEmployee == existPayroll { // Jika ID tersebut sudah terdaftar di 2 map tersebut
+	if existEmployee || existPayroll { // Jika ID tersebut sudah terdaftar di 2 map tersebut
 		return fmt.Errorf("EmployeeID [%s] %w", id, ErrDuplicateEmployeeID)
 	}
 	hris.Employees[id] = name
@@ -201,4 +201,27 @@ func (hris *HRIS) PrintPayrollReport() {
 }
 
 func main() {
+	hris := HRIS{
+		Employees: make(map[string]string),
+		Payrolls:  make(map[string]PayrollCalculator),
+	}
+
+	fulltime, _ := NewFullTimeEmployee(10_000_000, 2_000_000, 0.05)
+
+	contract, _ := NewContractEmployee(7_000_000, 1_000_000)
+
+	freelancer, _ := NewFreelancer(150_000, 80)
+
+	hris.RegisterEmployee("EMP001", "Le Rucco", fulltime)
+
+	hris.RegisterEmployee("EMP002", "Dewa", contract)
+
+	hris.RegisterEmployee("EMP003", "Norber", freelancer)
+
+	hris.PrintPayrollReport()
+
+	fmt.Printf(
+		"\nTOTAL PAYOUT: Rp %.2f\n",
+		hris.CalculateTotalPayout(),
+	)
 }
